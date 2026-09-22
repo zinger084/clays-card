@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f3efe4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Clays">
+<title>8-Man Clays</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-180.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+  :root {
+    --paper: #f3efe4;
+    --card: #fffdf8;
+    --ink: #1c1915;
+    --muted: #6d665c;
+    --line: #e4ddd0;
+    --orange: #b62c00;
+    --orange-ink: #fff8f4;
+    --green: #146c36;
+    --green-bg: #e5f6eb;
+    --warn-bg: #fff4d6;
+    --warn: #7a4b00;
+    --bad: #8d1d1d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #e7e0d4;
+    color: var(--ink);
+    font: 16px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .wrap {
+    max-width: 480px;
+    min-height: 100vh;
+    margin: 0 auto;
+    background: var(--paper);
+    padding-bottom: 0;
+  }
+  .sticky {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--paper);
+    padding: calc(10px + env(safe-area-inset-top)) 14px 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand {
+    margin: 0;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 650;
+  }
+  .standnav {
+    display: grid;
+    grid-template-columns: minmax(0, 72px) minmax(0, 1fr) minmax(0, 72px);
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .standnav .jump {
+    width: 100%;
+    min-width: 0;
+    height: 48px;
+    padding: 0;
+    border: 1px solid var(--line);
+    background: var(--card);
+    border-radius: 12px;
+    font-weight: 700;
+  }
+  .standmid { text-align: center; }
+  .standnum { font-size: 40px; line-height: 1; font-weight: 750; letter-spacing: -0.03em; }
+  .standof { color: var(--muted); font-size: 14px; }
+  .blockline { margin: 8px 0 0; text-align: center; font-size: 15px; font-weight: 650; }
+  .dots { display: flex; gap: 3px; margin-top: 8px; }
+  .dots button {
+    flex: 1;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .dots i {
+    display: block;
+    width: 8px;
+    height: 8px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: #d3cbc0;
+  }
+  .dots i.partial { background: #e0a15a; }
+  .dots i.full { background: var(--orange); }
+  .dots i.current { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+  main { padding: 12px 12px calc(108px + env(safe-area-inset-bottom)); }
+  .pagehead { padding: calc(14px + env(safe-area-inset-top)) 4px 4px; }
+  .pagehead h1 { margin: 0; font-size: 28px; letter-spacing: -0.03em; }
+  .pagehead p { margin: 4px 0 0; color: var(--muted); }
+  .group { margin: 0 0 14px; }
+  .group h2 {
+    margin: 10px 4px 8px;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .shooter, .row, .person, .note, .banner {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+  .shooter { padding: 10px 10px 8px; margin-bottom: 8px; }
+  .who { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .who strong { font-size: 20px; letter-spacing: -0.02em; }
+  .who .meta { color: var(--muted); font-size: 14px; }
+  .who .meta.ga20 { color: var(--orange); font-weight: 750; }
+  .who .run { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 750; font-size: 20px; }
+  .who .run.empty { color: #c0b8ac; font-weight: 500; }
+  .nums { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .nums button {
+    min-width: 0;
+    width: 100%;
+    height: 46px;
+    padding: 0;
+    border-radius: 10px;
+    border: 1px solid #d9d1c4;
+    background: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .nums button.on { background: var(--orange); color: var(--orange-ink); border-color: var(--orange); }
+  .hint { margin: 2px 4px 0; color: var(--muted); font-size: 13px; }
+  .banner {
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    background: var(--warn-bg);
+    border-color: #efd48a;
+    color: var(--warn);
+    overflow-wrap: anywhere;
+  }
+  .banner strong { display: block; margin-bottom: 4px; }
+  .banner button { display: block; }
+  .banner button, .textbtn {
+    margin-top: 8px;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: var(--orange);
+    font-weight: 750;
+  }
+  .section { margin-top: 16px; }
+  .section h2 { margin: 0 4px 8px; font-size: 18px; }
+  .row, .person { padding: 12px 14px; margin-bottom: 8px; }
+  .row.win, .person.win { background: var(--green-bg); border-color: #b7e0c4; }
+  .row.lead, .person.lead { border-color: #efc7b8; }
+  .topline, .pairline { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .name { font-size: 20px; font-weight: 750; letter-spacing: -0.02em; }
+  .pill {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    border-radius: 999px;
+    padding: 3px 8px;
+  }
+  .pill { flex: none; }
+  .pill.win { background: var(--green); color: white; }
+  .pill.lead { background: var(--orange); color: white; }
+  .sub { color: var(--muted); font-size: 14px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .note { padding: 12px 14px; color: var(--muted); margin-top: 8px; }
+  .person .nm {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font-size: 22px;
+    font-weight: 750;
+    padding: 0;
+    margin-bottom: 8px;
+  }
+  .choices { display: flex; gap: 6px; flex-wrap: wrap; }
+  .choices button {
+    min-width: 44px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid #d9d1c4;
+    background: #fff;
+    font-weight: 750;
+  }
+  .choices button.on { background: var(--ink); color: white; border-color: var(--ink); }
+  .checks { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 12px; }
+  .checks span {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .checks .bad { color: var(--bad); border-color: #f0c2c2; background: #fff5f5; }
+  .checks .ok { color: var(--green); }
+  .field { margin-top: 8px; }
+  .field label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+  .field input[type="number"] {
+    width: 88px;
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid #d9d1c4;
+    background: white;
+    padding: 0 10px;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .actions { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .actions button, .actions label.file {
+    display: block;
+    text-align: center;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+    font-weight: 700;
+  }
+  .actions .danger { color: var(--bad); }
+  .actions input { display: none; }
+  .tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: #fffdf8;
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  @media (min-width: 700px) {
+    .tabs { left: 50%; right: auto; width: 480px; transform: translateX(-50%); }
+  }
+  .tabs a {
+    min-width: 0;
+    text-align: center;
+    text-decoration: none;
+    color: var(--muted);
+    font-weight: 750;
+    padding: 14px 0 12px;
+  }
+  .tabs a.on { color: var(--orange); box-shadow: inset 0 3px 0 var(--orange); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <main id="app"></main>
+</div>
+<nav class="tabs" aria-label="Sections">
+  <a href="#score" id="tab-score">Score</a>
+  <a href="#results" id="tab-results">Results</a>
+  <a href="#squad" id="tab-squad">Squad</a>
+</nav>
+<script>
+const KEY = "clays8-v1";
+const SEED = [
+  { name: "Aidan", pair: "A", gauge: 12 },
+  { name: "Brad", pair: "B", gauge: 12 },
+  { name: "Brian", pair: "C", gauge: 12 },
+  { name: "Caleb", pair: "B", gauge: 12 },
+  { name: "Darren", pair: "D", gauge: 12 },
+  { name: "Jared", pair: "A", gauge: 12 },
+  { name: "Jason", pair: "D", gauge: 12 },
+  { name: "Ryan", pair: "C", gauge: 12 }
+];
+const BLOCKS = [
+  { title: "Block 1", range: "Stands 1-6", stands: [0, 1, 2, 3, 4, 5], groups: [["A", "B"], ["C", "D"]] },
+  { title: "Block 2", range: "Stands 7-12", stands: [6, 7, 8, 9, 10, 11], groups: [["A", "C"], ["B", "D"]] },
+  { title: "Block 3", range: "Stands 13-18", stands: [12, 13, 14, 15, 16, 17], groups: [["A", "D"], ["B", "C"]] }
+];
+const params = new URLSearchParams(location.search);
+const TEST = params.has("test");
+const DEMO = params.has("demo");
+
+function fresh() {
+  return {
+    version: 1,
+    shooters: SEED.map((s) => ({ name: s.name, pair: s.pair, gauge: s.gauge })),
+    scores: SEED.map(() => Array(18).fill(null)),
+    cardHcp: 5,
+    blockHcp: 2,
+    stand: 0
+  };
+}
+function clamp(n, lo, hi, fallback) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return fallback;
+  return Math.min(hi, Math.max(lo, Math.round(v)));
+}
+function sanitize(saved) {
+  const state = fresh();
+  if (!saved || saved.version !== 1) return state;
+  state.cardHcp = clamp(saved.cardHcp, 0, 30, 5);
+  state.blockHcp = clamp(saved.blockHcp, 0, 10, 2);
+  state.stand = clamp(saved.stand, 0, 17, 0);
+  if (Array.isArray(saved.shooters)) {
+    saved.shooters.slice(0, 8).forEach((sh, i) => {
+      if (!sh) return;
+      state.shooters[i].name = String(sh.name || "").slice(0, 24);
+      if (["A", "B", "C", "D"].includes(sh.pair)) state.shooters[i].pair = sh.pair;
+      state.shooters[i].gauge = Number(sh.gauge) === 20 ? 20 : 12;
+    });
+  }
+  if (Array.isArray(saved.scores)) {
+    saved.scores.slice(0, 8).forEach((row, i) => {
+      if (!Array.isArray(row)) return;
+      for (let st = 0; st < 18; st++) {
+        const v = row[st];
+        if (v === null || v === undefined || v === "") continue;
+        const n = Number(v);
+        if (Number.isInteger(n) && n >= 0 && n <= 6) state.scores[i][st] = n;
+      }
+    });
+  }
+  return state;
+}
+function load() {
+  if (TEST || DEMO) return fresh();
+  try { return sanitize(JSON.parse(localStorage.getItem(KEY) || "null")); }
+  catch (e) { return fresh(); }
+}
+let state = load();
+if (DEMO) {
+  state.shooters[5].gauge = 20;
+  for (let st = 0; st < 6; st++) {
+    state.scores.forEach((row, i) => {
+      row[st] = Math.max(0, [6, 5, 4, 5, 3, 6, 4, 5][i] - (st === 2 ? 1 : 0));
+    });
+  }
+  state.scores[0][6] = 4;
+  state.stand = 5;
+}
+
+function save() {
+  if (TEST || DEMO) return;
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* private mode */ }
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+}
+function entered(s, i) { return s.scores[i].filter((v) => v !== null).length; }
+function raw(s, i) { return s.scores[i].reduce((sum, v) => sum + (v == null ? 0 : v), 0); }
+function cardDone(s, i) { return entered(s, i) === 18; }
+function blockDone(s, i, b) { return BLOCKS[b].stands.every((st) => s.scores[i][st] !== null); }
+function blockRaw(s, i, b) { return BLOCKS[b].stands.reduce((sum, st) => sum + (s.scores[i][st] || 0), 0); }
+function is20(s, i) { return Number(s.shooters[i].gauge) === 20; }
+function adj108(s, i) { return raw(s, i) + (is20(s, i) && cardDone(s, i) ? Number(s.cardHcp) || 0 : 0); }
+function blockAdj(s, i, b) {
+  return blockRaw(s, i, b) + (is20(s, i) && blockDone(s, i, b) ? Number(s.blockHcp) || 0 : 0);
+}
+function members(s, letters) {
+  return s.shooters
+    .map((sh, i) => ({ name: sh.name, pair: sh.pair, gauge: sh.gauge, i }))
+    .filter((sh) => letters.includes(sh.pair))
+    .sort((a, b) => a.pair.localeCompare(b.pair) || a.i - b.i);
+}
+function pairCount(s, letter) { return s.shooters.filter((sh) => sh.pair === letter).length; }
+function pairsOk(s) { return ["A", "B", "C", "D"].every((letter) => pairCount(s, letter) === 2); }
+function handicapSkew(s) { return (Number(s.blockHcp) || 0) * 3 - (Number(s.cardHcp) || 0); }
+function any20(s) { return s.shooters.some((sh) => Number(sh.gauge) === 20); }
+function foursome(s, b, letters) {
+  const men = members(s, letters);
+  if (men.length !== 4) return { men, total: null };
+  if (!men.every((m) => blockDone(s, m.i, b))) return { men, total: null };
+  return { men, total: men.reduce((sum, m) => sum + blockAdj(s, m.i, b), 0) };
+}
+function allCardsDone(s) { return s.shooters.every((_, i) => cardDone(s, i)); }
+function allBlocksDone(s) {
+  return BLOCKS.every((block, b) => block.groups.every((letters) => foursome(s, b, letters).total != null));
+}
+function standStatus(s, st) {
+  const n = s.scores.filter((row) => row[st] != null).length;
+  if (n === 0) return "empty";
+  if (n === 8) return "full";
+  return "partial";
+}
+function displayName(sh, i) { return (sh.name || "").trim() || ("Shooter " + (i + 1)); }
+
+function individualBoard(s) {
+  const rows = s.shooters.map((sh, i) => ({
+    i,
+    name: displayName(sh, i),
+    pair: sh.pair,
+    gauge: sh.gauge,
+    raw: raw(s, i),
+    hcp: is20(s, i) && cardDone(s, i) ? Number(s.cardHcp) || 0 : 0,
+    adj: adj108(s, i),
+    birds: entered(s, i)
+  }));
+  rows.sort((a, b) => (b.birds > 0) - (a.birds > 0) || b.adj - a.adj || a.name.localeCompare(b.name));
+  const final = allCardsDone(s);
+  const scored = rows.filter((r) => r.birds > 0);
+  const max = scored.length ? Math.max(...scored.map((r) => r.adj)) : null;
+  const counts = new Set(rows.map((r) => r.birds));
+  rows.forEach((r) => {
+    r.win = final && r.adj === rows.reduce((m, row) => Math.max(m, row.adj), 0);
+    r.lead = !final && r.birds > 0 && r.adj === max;
+  });
+  return { rows, final, uneven: counts.size > 1 && scored.length > 0 };
+}
+function pairBoard(s) {
+  const rows = ["A", "B", "C", "D"].map((letter) => {
+    const men = members(s, [letter]);
+    const parts = men.map((m) => adj108(s, m.i));
+    return {
+      letter,
+      names: men.map((m) => displayName(s.shooters[m.i], m.i)),
+      total: parts.reduce((sum, n) => sum + n, 0),
+      ok: men.length === 2,
+      birds: men.reduce((sum, m) => sum + entered(s, m.i), 0)
+    };
+  });
+  const final = allCardsDone(s) && pairsOk(s);
+  const open = rows.filter((r) => r.ok && r.birds > 0);
+  const max = open.length ? Math.max(...open.map((r) => r.total)) : null;
+  rows.forEach((r) => {
+    r.win = final && r.ok && r.total === Math.max(...rows.filter((row) => row.ok).map((row) => row.total));
+    r.lead = !final && r.ok && r.birds > 0 && r.total === max;
+  });
+  return { rows, final };
+}
+function foursomeBoard(s) {
+  const rows = [];
+  BLOCKS.forEach((block, b) => {
+    block.groups.forEach((letters) => {
+      const card = foursome(s, b, letters);
+      rows.push({
+        block: block.title,
+        range: block.range,
+        label: letters.join(" + "),
+        names: card.men.map((m) => displayName(s.shooters[m.i], m.i)).join(", "),
+        total: card.total
+      });
+    });
+  });
+  const final = allBlocksDone(s) && pairsOk(s);
+  const done = rows.filter((r) => r.total != null);
+  const max = done.length ? Math.max(...done.map((r) => r.total)) : null;
+  const finalMax = final ? max : null;
+  rows.forEach((r) => {
+    r.win = final && r.total != null && r.total === finalMax;
+    r.best = !final && r.total != null && r.total === max;
+  });
+  return { rows, final, any: done.length > 0 };
+}
+function gridTSV(s) {
+  return s.scores.map((row) => row.map((v) => (v == null ? "" : String(v))).join("\t")).join("\n");
+}
+function shareText(s) {
+  const ind = individualBoard(s);
+  const pairs = pairBoard(s);
+  const fours = foursomeBoard(s);
+  const finished = Array.from({ length: 18 }, (_, st) => standStatus(s, st) === "full").filter(Boolean).length;
+  const lines = ["8-man sporting clays", finished + " of 18 stands filled for everyone", ""];
+  if (ind.final) {
+    const wins = ind.rows.filter((r) => r.win).map((r) => r.name + " " + r.adj);
+    lines.push("Individual WIN: " + wins.join(", "));
+  } else {
+    lines.push("Individual so far");
+  }
+  ind.rows.forEach((r) => {
+    if (!r.birds) return;
+    lines.push(r.name + "  " + r.adj + (r.hcp ? " (includes +" + r.hcp + ")" : ""));
+  });
+  lines.push("", ind.final || pairs.final ? "Pairs" : "Pairs so far");
+  pairs.rows.forEach((r) => lines.push("Pair " + r.letter + "  " + r.names.join(" + ") + "  " + r.total));
+  lines.push("", "Foursomes");
+  fours.rows.forEach((r) => {
+    lines.push(r.block + " " + r.label + "  " + (r.total == null ? "not in yet" : r.total) + (r.win ? " WIN" : ""));
+  });
+  if (!fours.final) lines.push("Foursome winner waits until all 18 stands are in.");
+  return lines.join("\n");
+}
+
+function tabName() {
+  const name = (location.hash || "#score").replace("#", "");
+  return ["score", "results", "squad"].includes(name) ? name : "score";
+}
+function setTabs() {
+  ["score", "results", "squad"].forEach((name) => {
+    document.getElementById("tab-" + name).classList.toggle("on", name === tabName());
+  });
+}
+function skewBanner() {
+  const skew = handicapSkew(state);
+  if (!skew || !any20(state)) return "";
+  const blocks = (Number(state.blockHcp) || 0) * 3;
+  return '<div class="banner" id="skew"><strong>20-gauge pots do not match</strong>+' +
+    esc(state.cardHcp) + " on the full card, +" + esc(state.blockHcp) +
+    " on each block (+" + blocks + " altogether). That is the same split as the spreadsheet. " +
+    '<button type="button" data-act="match">Use +' + blocks + " on the card</button></div>";
+}
+function iosBanner() {
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const standalone = navigator.standalone || matchMedia("(display-mode: standalone)").matches;
+  let dismissed = false;
+  try { dismissed = sessionStorage.getItem("clays-ios-tip") === "1"; } catch (e) { dismissed = false; }
+  if (!ios || standalone || dismissed || location.protocol === "file:") return "";
+  return '<div class="banner" id="ios"><strong>Keep this on your Home Screen</strong>Tap Share, then Add to Home Screen. It opens like an app and the round stays on this phone.' +
+    '<button type="button" data-act="dismiss-ios">Hide</button></div>';
+}
+
+function renderScore() {
+  const stand = state.stand;
+  const block = BLOCKS[Math.floor(stand / 6)];
+  const dots = Array.from({ length: 18 }, (_, st) => {
+    const status = standStatus(state, st);
+    const current = st === stand ? " current" : "";
+    return '<button type="button" data-act="goto" data-stand="' + st + '" aria-label="Stand ' + (st + 1) + '"><i class="' + status + current + '"></i></button>';
+  }).join("");
+  const groups = block.groups.map((letters) => {
+    const men = members(state, letters);
+    const cards = men.map((m) => {
+      const value = state.scores[m.i][stand];
+      const birds = entered(state, m.i);
+      const nums = [0, 1, 2, 3, 4, 5, 6].map((n) => {
+        const on = value === n ? " on" : "";
+        return '<button type="button" class="' + on + '" data-act="hit" data-i="' + m.i + '" data-n="' + n + '" aria-pressed="' + (value === n) + '" aria-label="' + esc(displayName(state.shooters[m.i], m.i)) + " stand " + (stand + 1) + ", " + n + ' hits">' + n + "</button>";
+      }).join("");
+      const ga = is20(state, m.i) ? "ga20" : "";
+      const run = birds ? String(raw(state, m.i)) : "·";
+      return '<article class="shooter"><div class="who"><strong>' + esc(displayName(state.shooters[m.i], m.i)) +
+        '</strong><span class="meta ' + ga + '">' + esc(m.pair) + " · " + (is20(state, m.i) ? "20" : "12") +
+        '</span><span class="run' + (birds ? "" : " empty") + '">' + run + "</span></div><div class=\"nums\">" + nums + "</div></article>";
+    }).join("");
+    return '<section class="group"><h2>' + letters.join(" + ") + "</h2>" + cards + "</section>";
+  }).join("");
+  return '<header class="sticky"><p class="brand">8-man sporting clays</p><div class="standnav">' +
+    '<button type="button" class="jump" data-act="prev">Prev</button><div class="standmid"><div class="standnum">' + (stand + 1) +
+    '</div><div class="standof">of 18</div></div><button type="button" class="jump" data-act="next">Next</button></div>' +
+    '<p class="blockline">' + block.title + " · " + block.range + " · " + block.groups.map((g) => g.join("+")).join(" vs ") +
+    '</p><div class="dots">' + dots + "</div></header>" + iosBanner() + groups +
+    '<p class="hint">Tap 0 through 6. Tap the same number again to clear that stand. A blank is not a zero. The total on the right is raw hits so far.</p>';
+}
+function renderResults() {
+  const ind = individualBoard(state);
+  const pairs = pairBoard(state);
+  const fours = foursomeBoard(state);
+  const people = ind.rows.map((r) => {
+    const cls = r.win ? "win" : (r.lead ? "lead" : "");
+    const pill = r.win ? '<span class="pill win">WIN</span>' : (r.lead ? '<span class="pill lead">LEAD</span>' : "");
+    const score = r.birds ? (r.hcp ? (r.raw + " +" + r.hcp + " = " + r.adj) : String(r.adj)) : "no birds yet";
+    return '<article class="row ' + cls + '"><div class="topline"><span class="name">' + esc(r.name) + '</span>' + pill +
+      '</div><div class="sub">' + esc(r.pair) + " · " + r.gauge + "-ga · " + score + "</div></article>";
+  }).join("");
+  const pairRows = pairs.rows.map((r) => {
+    const cls = r.win ? "win" : (r.lead ? "lead" : "");
+    const pill = r.win ? '<span class="pill win">WIN</span>' : (r.lead ? '<span class="pill lead">LEAD</span>' : "");
+    return '<article class="row ' + cls + '"><div class="pairline"><span class="name">Pair ' + r.letter + "</span>" + pill +
+      '</div><div class="sub">' + esc(r.names.join(" + ") || "empty") + (r.ok ? "" : " · needs 2") + " · " + r.total + "</div></article>";
+  }).join("");
+  const fourRows = fours.rows.map((r) => {
+    const cls = r.win ? "win" : (r.best ? "lead" : "");
+    const pill = r.win ? '<span class="pill win">WIN</span>' : (r.best ? '<span class="pill lead">BEST SO FAR</span>' : "");
+    const score = r.total == null ? "not in yet" : String(r.total);
+    return '<article class="row ' + cls + '"><div class="pairline"><span class="name">' + esc(r.label) + "</span>" + pill +
+      '</div><div class="sub">' + esc(r.block + " · " + r.range) + " · " + score + "<br>" + esc(r.names) + "</div></article>";
+  }).join("");
+  const uneven = ind.uneven ? '<div class="banner"><strong>Stands are uneven</strong>Someone is missing a stand the others already have, so the lead is not a fair card yet.</div>' : "";
+  const fourNote = fours.final
+    ? ""
+    : '<p class="note">' + (fours.any
+      ? "Best block so far is not the winner. The other blocks still count."
+      : "A foursome score shows up after all four shooters have all six stands in that block. Blank is not zero.") + "</p>";
+  const payNote = ind.final ? "" : '<p class="note">WIN is the payout, and it waits until every stand is filled. LEAD is only the running total. 20-gauge bonus lands when that card, or that block, is complete.</p>';
+  return '<div class="pagehead"><h1>Results</h1><p>Same three pots as the spreadsheet, once the card is full.</p></div>' +
+    skewBanner() + uneven +
+    '<section class="section"><h2>Individual</h2>' + people + "</section>" +
+    '<section class="section"><h2>Pairs</h2>' + pairRows + "</section>" +
+    '<section class="section"><h2>Foursomes</h2>' + fourRows + fourNote + "</section>" +
+    payNote +
+    '<div class="actions"><button type="button" data-act="share">Share results</button><button type="button" data-act="grid">Copy scores for Excel</button></div>';
+}
+function renderSquad() {
+  const checks = ["A", "B", "C", "D"].map((letter) => {
+    const n = pairCount(state, letter);
+    return '<span class="' + (n === 2 ? "ok" : "bad") + '">Pair ' + letter + " · " + n + (n === 2 ? " OK" : " FIX") + "</span>";
+  }).join("");
+  const cards = state.shooters.map((sh, i) => {
+    const pairs = ["A", "B", "C", "D"].map((letter) =>
+      '<button type="button" data-act="pair" data-i="' + i + '" data-pair="' + letter + '"' + (sh.pair === letter ? ' class="on"' : "") + ">" + letter + "</button>"
+    ).join("");
+    const gauges = [12, 20].map((ga) =>
+      '<button type="button" data-act="gauge" data-i="' + i + '" data-gauge="' + ga + '"' + (Number(sh.gauge) === ga ? ' class="on"' : "") + ">" + ga + "</button>"
+    ).join("");
+    return '<article class="person"><input class="nm" data-field="name" data-i="' + i + '" value="' + esc(sh.name) + '" maxlength="24" aria-label="Shooter ' + (i + 1) + ' name" placeholder="Name"><div class="choices">' + pairs + gauges + "</div></article>";
+  }).join("");
+  return '<div class="pagehead"><h1>Squad</h1><p>Same starting eight as the spreadsheet. Two men on each pair. The Excel file is not changed.</p></div>' +
+    '<div class="checks">' + checks + "</div>" + cards +
+    '<section class="section"><h2>20-gauge bonus</h2>' + skewBanner() +
+    '<div class="field"><label for="cardHcp">Added to a finished 108</label><input id="cardHcp" data-field="cardHcp" type="number" min="0" max="30" inputmode="numeric" value="' + esc(state.cardHcp) + '"></div>' +
+    '<div class="field"><label for="blockHcp">Added to each finished 36-bird block</label><input id="blockHcp" data-field="blockHcp" type="number" min="0" max="10" inputmode="numeric" value="' + esc(state.blockHcp) + '"></div></section>' +
+    '<div class="actions"><button type="button" data-act="clear">Clear this round</button><button type="button" data-act="restore">Put the original 8 names back</button><label class="file">Load a saved round<input id="file" type="file" accept="application/json"></label><button type="button" data-act="backup">Save a backup file</button></div>' +
+    '<p class="hint">Scores stay on this phone. Paste the Excel copy onto the yellow stand cells, first shooter, stand 1. Rows follow this list from top to bottom.</p>';
+}
+function render() {
+  if (TEST) return;
+  const root = document.getElementById("app");
+  const name = tabName();
+  setTabs();
+  root.innerHTML = name === "results" ? renderResults() : (name === "squad" ? renderSquad() : renderScore());
+}
+
+function setHit(i, n) {
+  const cur = state.scores[i][state.stand];
+  state.scores[i][state.stand] = cur === n ? null : n;
+  save();
+  render();
+}
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    const area = document.createElement("textarea");
+    area.value = text;
+    document.body.appendChild(area);
+    area.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+    area.remove();
+    return ok;
+  }
+}
+function downloadBackup() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "clays-round.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.getElementById("app").addEventListener("click", async (event) => {
+  const el = event.target.closest("[data-act]");
+  if (!el) return;
+  const act = el.dataset.act;
+  if (act === "prev") state.stand = Math.max(0, state.stand - 1);
+  if (act === "next") state.stand = Math.min(17, state.stand + 1);
+  if (act === "goto") state.stand = clamp(el.dataset.stand, 0, 17, state.stand);
+  if (act === "hit") { setHit(Number(el.dataset.i), Number(el.dataset.n)); return; }
+  if (act === "pair") state.shooters[Number(el.dataset.i)].pair = el.dataset.pair;
+  if (act === "gauge") state.shooters[Number(el.dataset.i)].gauge = Number(el.dataset.gauge);
+  if (act === "match") state.cardHcp = (Number(state.blockHcp) || 0) * 3;
+  if (act === "dismiss-ios") {
+    try { sessionStorage.setItem("clays-ios-tip", "1"); } catch (e) { /* ignore */ }
+  }
+  if (act === "clear") {
+    if (!confirm("Clear every stand score? Names stay.")) return;
+    state.scores = SEED.map(() => Array(18).fill(null));
+    state.stand = 0;
+  }
+  if (act === "restore") {
+    if (!confirm("Put the original eight names, pairs, and gauges back? Scores stay.")) return;
+    state.shooters = SEED.map((s) => ({ name: s.name, pair: s.pair, gauge: s.gauge }));
+  }
+  if (act === "share") {
+    const text = shareText(state);
+    if (navigator.share) {
+      try { await navigator.share({ title: "8-man clays", text }); return; }
+      catch (e) { /* cancelled or unsupported, fall through */ }
+    }
+    const ok = await copyText(text);
+    alert(ok ? "Results copied." : text);
+    return;
+  }
+  if (act === "grid") {
+    const ok = await copyText(gridTSV(state));
+    alert(ok ? "Scores copied. On the Excel Scorecard, click the first yellow stand cell and paste." : "Could not copy.");
+    return;
+  }
+  if (act === "backup") { downloadBackup(); return; }
+  if (act === "prev" || act === "next" || act === "goto" || act === "pair" || act === "gauge" || act === "match" || act === "dismiss-ios" || act === "clear" || act === "restore") {
+    save();
+    render();
+  }
+});
+document.getElementById("app").addEventListener("input", (event) => {
+  const el = event.target;
+  if (el.dataset.field === "name") {
+    state.shooters[Number(el.dataset.i)].name = el.value.slice(0, 24);
+    save();
+  }
+});
+document.getElementById("app").addEventListener("change", async (event) => {
+  const field = event.target.dataset ? event.target.dataset.field : "";
+  if (field === "cardHcp" || field === "blockHcp") {
+    state[field] = clamp(event.target.value, 0, field === "cardHcp" ? 30 : 10, field === "cardHcp" ? 5 : 2);
+    save();
+    render();
+    return;
+  }
+  if (event.target.id !== "file" || !event.target.files[0]) return;
+  const file = event.target.files[0];
+  try {
+    const next = sanitize(JSON.parse(await file.text()));
+    if (!confirm("Replace the round on this phone with that file?")) return;
+    state = next;
+    save();
+    render();
+  } catch (e) {
+    alert("That file is not a saved round.");
+  }
+});
+window.addEventListener("hashchange", render);
+
+function runTests() {
+  const fails = [];
+  function eq(name, got, want) {
+    if (JSON.stringify(got) !== JSON.stringify(want)) fails.push(name + " got " + JSON.stringify(got) + " want " + JSON.stringify(want));
+  }
+  const covered = BLOCKS.flatMap((b) => b.stands);
+  eq("stands cover 0-17", covered.slice().sort((a, b) => a - b), Array.from({ length: 18 }, (_, i) => i));
+  const blank = fresh();
+  eq("blank not zero", cardDone(blank, 0), false);
+  eq("no foursome yet", foursome(blank, 0, ["A", "B"]).total, null);
+  eq("no individual win yet", individualBoard(blank).rows.some((r) => r.win), false);
+  eq("skew", handicapSkew(blank), 1);
+  blank.scores[0][0] = 0;
+  eq("explicit zero counts", entered(blank, 0), 1);
+  eq("explicit zero raw", raw(blank, 0), 0);
+  const blockOnly = fresh();
+  blockOnly.shooters[5].gauge = 20;
+  for (let st = 0; st < 6; st++) blockOnly.scores[5][st] = 6;
+  eq("block bonus before card bonus", blockAdj(blockOnly, 5, 0), 38);
+  eq("no card bonus mid round", adj108(blockOnly, 5), 36);
+  eq("later block has no bonus yet", blockAdj(blockOnly, 5, 1), 0);
+  const full = fresh();
+  full.shooters[5].gauge = 20;
+  full.scores.forEach((row) => { for (let st = 0; st < 18; st++) row[st] = 6; });
+  eq("jared adj", adj108(full, 5), 113);
+  eq("aidan adj", adj108(full, 0), 108);
+  eq("block sum is 114", blockAdj(full, 5, 0) + blockAdj(full, 5, 1) + blockAdj(full, 5, 2), 114);
+  eq("individual winner", individualBoard(full).rows.filter((r) => r.win).map((r) => r.name), ["Jared"]);
+  eq("pair A", pairBoard(full).rows[0].total, 221);
+  eq("pair winners", pairBoard(full).rows.filter((r) => r.win).map((r) => r.letter), ["A"]);
+  const fours = foursomeBoard(full);
+  eq("foursome tie", fours.rows.filter((r) => r.win).map((r) => r.label), ["A + B", "A + C", "A + D"]);
+  eq("foursome 146", fours.rows[0].total, 146);
+  eq("foursome 144", fours.rows[1].total, 144);
+  const names = members(full, ["A", "C"]).map((m) => m.name);
+  eq("block 2 squad", names, ["Aidan", "Jared", "Brian", "Ryan"]);
+  const tsv = gridTSV(full).split("\n");
+  eq("tsv rows", tsv.length, 8);
+  eq("tsv cols", tsv[0].split("\t").length, 18);
+  const partial = fresh();
+  partial.scores[0][0] = 4;
+  eq("tsv keeps blanks", gridTSV(partial).split("\n")[0].split("\t")[0], "4");
+  eq("tsv blank cell", gridTSV(partial).split("\n")[0].split("\t")[1], "");
+  const share = shareText(full);
+  eq("share names the win", share.indexOf("Individual WIN: Jared 113") >= 0, true);
+  const block1 = fresh();
+  for (let i = 0; i < 8; i++) for (let st = 0; st < 6; st++) block1.scores[i][st] = 5;
+  eq("block 1 total", foursome(block1, 0, ["A", "B"]).total, 120);
+  eq("block 1 is not the payout", foursomeBoard(block1).final, false);
+  eq("both block 1 squads lead", foursomeBoard(block1).rows.filter((r) => r.best).length, 2);
+  document.body.innerHTML = '<pre id="testout">' + (fails.length ? ("FAIL\n" + fails.join("\n")) : "PASS") + "</pre>";
+}
+
+if (TEST) runTests();
+else {
+  render();
+  if (location.protocol.indexOf("http") === 0 && "serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+}
+</script>
+</body>
+</html>
