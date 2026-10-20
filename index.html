@@ -356,7 +356,7 @@ function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* private mode */ }
 }
 function esc(s) {
-  return String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&", "<": "<", ">": ">", '"': """, "'": "&#39;" }[ch]));
+  return String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 }
 function entered(s, i) { return s.scores[i].filter((v) => v !== null).length; }
 function raw(s, i) { return s.scores[i].reduce((sum, v) => sum + (v == null ? 0 : v), 0); }
