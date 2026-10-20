@@ -110,6 +110,7 @@
   .who strong { font-size: 20px; letter-spacing: -0.02em; }
   .who .run { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 750; font-size: 20px; }
   .who .run.empty { color: #c0b8ac; font-weight: 500; }
+  .who .pct { margin-left: 6px; color: var(--muted); font-size: 14px; font-weight: 650; }
   .nums { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
   .nums button {
     min-width: 0;
@@ -282,6 +283,19 @@ function displayTeam(t) { return (state.teams[t] || "").trim() || ("Team " + (t 
 function displayName(i) { return (state.names[i] || "").trim() || ("Shooter " + (i + 1)); }
 function entered(i) { return state.scores[i].filter((v) => v !== null).length; }
 function raw(i) { return state.scores[i].reduce((sum, v) => sum + (v == null ? 0 : v), 0); }
+function hitPercent(hits, birds) {
+  if (!birds) return null;
+  return Math.round((hits / (birds * MAX_HITS)) * 100);
+}
+function scoreLine(hits, birds) {
+  const n = hits + " hit" + (hits === 1 ? "" : "s");
+  const p = hitPercent(hits, birds);
+  return p == null ? n : (n + " · " + p + "%");
+}
+function runHtml(hits, birds) {
+  if (!birds) return "·";
+  return hits + '<span class="pct">' + hitPercent(hits, birds) + "%</span>";
+}
 function cardDone(i) { return entered(i) === STANDS; }
 function allDone() { return state.names.every((_, i) => cardDone(i)); }
 function standStatus(st) {
@@ -339,20 +353,20 @@ function shareText() {
   const finished = Array.from({ length: STANDS }, (_, st) => standStatus(st) === "full").filter(Boolean).length;
   const lines = ["8-man sporting clays", finished + " of 18 stands filled for everyone", ""];
   if (teams.final) {
-    lines.push("Team WIN: " + teams.rows.filter((r) => r.win).map((r) => r.name + " " + r.hits).join(", "));
+    lines.push("Team WIN: " + teams.rows.filter((r) => r.win).map((r) => r.name + " " + r.hits + " " + hitPercent(r.hits, r.birds) + "%").join(", "));
   } else {
     lines.push("Teams so far");
   }
-  teams.rows.forEach((r) => lines.push(r.name + "  " + r.hits));
+  teams.rows.forEach((r) => lines.push(r.name + "  " + r.hits + (r.birds ? "  " + hitPercent(r.hits, r.birds) + "%" : "")));
   lines.push("");
   if (people.final) {
-    lines.push("WIN: " + people.rows.filter((r) => r.win).map((r) => r.name + " " + r.hits).join(", "));
+    lines.push("WIN: " + people.rows.filter((r) => r.win).map((r) => r.name + " " + r.hits + " " + hitPercent(r.hits, r.birds) + "%").join(", "));
   } else {
     lines.push("Shooters so far");
   }
   people.rows.forEach((r) => {
     if (!r.birds) return;
-    lines.push(r.name + "  " + r.hits);
+    lines.push(r.name + "  " + r.hits + "  " + hitPercent(r.hits, r.birds) + "%");
   });
   if (!people.final) lines.push("", "Winners wait until all 18 stands are in.");
   return lines.join("\n");
@@ -375,7 +389,7 @@ function shooterCard(i, stand) {
     const on = value === n ? " on" : "";
     return '<button type="button" class="' + on + '" data-act="hit" data-i="' + i + '" data-n="' + n + '" aria-pressed="' + (value === n) + '" aria-label="' + esc(displayName(i)) + " stand " + (stand + 1) + ", " + n + ' hits">' + n + "</button>";
   }).join("");
-  const run = birds ? String(raw(i)) : "·";
+  const run = runHtml(raw(i), birds);
   return '<article class="shooter"><div class="who"><strong>' + esc(displayName(i)) + '</strong><span class="run' + (birds ? "" : " empty") + '">' + run + "</span></div><div class=\"nums\">" + nums + "</div></article>";
 }
 function renderScore() {
@@ -393,7 +407,7 @@ function renderScore() {
     '<button type="button" class="jump" data-act="prev">Prev</button><div class="standmid"><div class="standnum">' + (stand + 1) +
     '</div><div class="standof">of 18</div></div><button type="button" class="jump" data-act="next">Next</button></div>' +
     '<div class="dots">' + dots + "</div></header>" + groups +
-    '<p class="hint">Tap 0 through 6. Up to 6 hits on a stand. Tap the same number again to clear it. A blank is not a zero. The number on the right is hits so far. Change a name or a team on the Names tab.</p>';
+    '<p class="hint">Tap 0 through 6. Up to 6 hits on a stand. Tap the same number again to clear it. A blank is not a zero. The number on the right is hits so far, then the percent of those targets. Change a name or a team on the Names tab.</p>';
 }
 function resultRow(r, extra) {
   const cls = r.win ? "win" : (r.lead ? "lead" : "");
@@ -405,11 +419,11 @@ function renderResults() {
   const people = board();
   const teams = teamBoard();
   const teamRows = teams.rows.map((r) => {
-    const score = r.birds ? (r.hits + " hit" + (r.hits === 1 ? "" : "s")) : "no birds yet";
+    const score = r.birds ? scoreLine(r.hits, r.birds) : "no birds yet";
     return resultRow(r, score + " · " + esc(r.names.join(", ")));
   }).join("");
   const personRows = people.rows.map((r) => {
-    const score = r.birds ? (r.hits + " hit" + (r.hits === 1 ? "" : "s")) : "no birds yet";
+    const score = r.birds ? scoreLine(r.hits, r.birds) : "no birds yet";
     return resultRow(r, esc(r.team) + " · " + score + " · " + r.birds + " of 18 stands");
   }).join("");
   const teamNote = teams.uneven ? '<p class="note">The two teams do not have the same number of stands in yet.</p>' : "";
@@ -526,6 +540,8 @@ function runTests() {
   state = full;
   eq("ann hits", raw(0), 108);
   eq("red total", teamBoard().rows[0].hits, 432);
+  eq("red percent", hitPercent(teamBoard().rows[0].hits, teamBoard().rows[0].birds), 100);
+  eq("blue percent", hitPercent(teamBoard().rows[1].hits, teamBoard().rows[1].birds), 67);
   eq("team winner", teamBoard().rows.filter((r) => r.win).map((r) => r.name), ["Red"]);
   eq("shooter winners", board().rows.filter((r) => r.win).map((r) => r.name).sort(), ["Ann", "Bob", "Cara", "Dan"]);
   full.scores[4] = full.scores[0].slice();
@@ -539,10 +555,11 @@ function runTests() {
   state = mid;
   eq("spaced team", displayTeam(0), "Team 1");
   eq("team lead", teamBoard().rows.filter((r) => r.lead).map((r) => r.name), ["Team 1"]);
+  eq("partial percent", hitPercent(5, 1), 83);
   eq("not final", teamBoard().final, false);
   const text = shareText();
   state = full;
-  eq("share team", shareText().indexOf("Team WIN: Red 432, Blue 432") >= 0, true);
+  eq("share team", shareText().indexOf("Team WIN: Red 432 100%, Blue 432 100%") >= 0, true);
   eq("mid has no win line", text.indexOf("Team WIN:") === -1, true);
   document.body.innerHTML = '<pre id="testout">' + (fails.length ? ("FAIL\n" + fails.join("\n")) : "PASS") + "</pre>";
 }
