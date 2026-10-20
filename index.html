@@ -178,14 +178,18 @@
   .sub { color: var(--muted); font-size: 14px; margin-top: 2px; font-variant-numeric: tabular-nums; }
   .note { padding: 12px 14px; color: var(--muted); margin-top: 8px; }
   .person .nm {
+    display: block;
     width: 100%;
-    border: 0;
-    background: transparent;
+    min-height: 48px;
+    border: 1px solid #d9d1c4;
+    background: #fff;
+    border-radius: 10px;
     font-size: 22px;
     font-weight: 750;
-    padding: 0;
+    padding: 8px 12px;
     margin-bottom: 8px;
   }
+  .person .nm::placeholder { color: #b0a89c; font-weight: 650; }
   .choices { display: flex; gap: 6px; flex-wrap: wrap; }
   .choices button {
     min-width: 44px;
@@ -265,7 +269,7 @@
 <nav class="tabs" aria-label="Sections">
   <a href="#score" id="tab-score">Score</a>
   <a href="#results" id="tab-results">Results</a>
-  <a href="#squad" id="tab-squad">Squad</a>
+  <a href="#names" id="tab-names">Names</a>
 </nav>
 <script>
 const KEY = "clays8-v1";
@@ -352,7 +356,7 @@ function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* private mode */ }
 }
 function esc(s) {
-  return String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+  return String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&", "<": "<", ">": ">", '"': """, "'": "&#39;" }[ch]));
 }
 function entered(s, i) { return s.scores[i].filter((v) => v !== null).length; }
 function raw(s, i) { return s.scores[i].reduce((sum, v) => sum + (v == null ? 0 : v), 0); }
@@ -490,10 +494,11 @@ function shareText(s) {
 
 function tabName() {
   const name = (location.hash || "#score").replace("#", "");
-  return ["score", "results", "squad"].includes(name) ? name : "score";
+  if (name === "squad") return "names";
+  return ["score", "results", "names"].includes(name) ? name : "score";
 }
 function setTabs() {
-  ["score", "results", "squad"].forEach((name) => {
+  ["score", "results", "names"].forEach((name) => {
     document.getElementById("tab-" + name).classList.toggle("on", name === tabName());
   });
 }
@@ -546,7 +551,7 @@ function renderScore() {
     '</div><div class="standof">of 18</div></div><button type="button" class="jump" data-act="next">Next</button></div>' +
     '<p class="blockline">' + block.title + " · " + block.range + " · " + block.groups.map((g) => g.join("+")).join(" vs ") +
     '</p><div class="dots">' + dots + "</div></header>" + iosBanner() + groups +
-    '<p class="hint">Tap 0 through 6. Tap the same number again to clear that stand. A blank is not a zero. The total on the right is raw hits so far.</p>';
+    '<p class="hint">Tap 0 through 6. Tap the same number again to clear that stand. A blank is not a zero. The total on the right is raw hits so far. Change a name on the Names tab.</p>';
 }
 function renderResults() {
   const ind = individualBoard(state);
@@ -587,7 +592,7 @@ function renderResults() {
     payNote +
     '<div class="actions"><button type="button" data-act="share">Share results</button><button type="button" data-act="grid">Copy scores for Excel</button></div>';
 }
-function renderSquad() {
+function renderNames() {
   const checks = ["A", "B", "C", "D"].map((letter) => {
     const n = pairCount(state, letter);
     return '<span class="' + (n === 2 ? "ok" : "bad") + '">Pair ' + letter + " · " + n + (n === 2 ? " OK" : " FIX") + "</span>";
@@ -599,9 +604,9 @@ function renderSquad() {
     const gauges = [12, 20].map((ga) =>
       '<button type="button" data-act="gauge" data-i="' + i + '" data-gauge="' + ga + '"' + (Number(sh.gauge) === ga ? ' class="on"' : "") + ">" + ga + "</button>"
     ).join("");
-    return '<article class="person"><input class="nm" data-field="name" data-i="' + i + '" value="' + esc(sh.name) + '" maxlength="24" aria-label="Shooter ' + (i + 1) + ' name" placeholder="Name"><div class="choices">' + pairs + gauges + "</div></article>";
+    return '<article class="person"><input class="nm" data-field="name" data-i="' + i + '" value="' + esc(sh.name) + '" maxlength="24" enterkeyhint="done" autocomplete="off" autocapitalize="words" aria-label="Shooter ' + (i + 1) + ' name" placeholder="Shooter ' + (i + 1) + '"><div class="choices">' + pairs + gauges + "</div></article>";
   }).join("");
-  return '<div class="pagehead"><h1>Squad</h1><p>Same starting eight as the spreadsheet. Two men on each pair. The Excel file is not changed.</p></div>' +
+  return '<div class="pagehead"><h1>Names</h1><p>Eight shooters. Type over a name. This phone keeps one round. Pair and gauge stay with that spot.</p></div>' +
     '<div class="checks">' + checks + "</div>" + cards +
     '<section class="section"><h2>20-gauge bonus</h2>' + skewBanner() +
     '<div class="field"><label for="cardHcp">Added to a finished 108</label><input id="cardHcp" data-field="cardHcp" type="number" min="0" max="30" inputmode="numeric" value="' + esc(state.cardHcp) + '"></div>' +
@@ -614,7 +619,7 @@ function render() {
   const root = document.getElementById("app");
   const name = tabName();
   setTabs();
-  root.innerHTML = name === "results" ? renderResults() : (name === "squad" ? renderSquad() : renderScore());
+  root.innerHTML = name === "results" ? renderResults() : (name === "names" ? renderNames() : renderScore());
 }
 
 function setHit(i, n) {
@@ -770,6 +775,12 @@ function runTests() {
   eq("block 1 total", foursome(block1, 0, ["A", "B"]).total, 120);
   eq("block 1 is not the payout", foursomeBoard(block1).final, false);
   eq("both block 1 squads lead", foursomeBoard(block1).rows.filter((r) => r.best).length, 2);
+  const renamed = fresh();
+  renamed.shooters[0].name = "Cole";
+  eq("typed name", displayName(renamed.shooters[0], 0), "Cole");
+  renamed.shooters[0].name = "   ";
+  eq("blank name", displayName(renamed.shooters[0], 0), "Shooter 1");
+  eq("sanitize keeps a typed name", sanitize({ version: 1, shooters: [{ name: "Cole Ryan", pair: "B", gauge: 20 }] }).shooters[0], { name: "Cole Ryan", pair: "B", gauge: 20 });
   document.body.innerHTML = '<pre id="testout">' + (fails.length ? ("FAIL\n" + fails.join("\n")) : "PASS") + "</pre>";
 }
 
